@@ -1,0 +1,49 @@
+<div class="tab-content">
+  <div class="sunday-container">
+    <div class="sunday-card" style="margin-bottom:14px">
+      <h2 style="margin:0">Settings</h2>
+      <div style="color:var(--muted);margin-top:6px">Console preferences + LearnMappers config viewer.</div>
+    </div>
+
+    <div class="sunday-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+      <div class="sunday-card">
+        <div style="font-weight:800;margin-bottom:10px">LearnMappers config</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Read-only view of <code>/sites/learnmappers/config.json</code></div>
+        <pre id="lmConfigDump" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;margin:0;max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(0,0,0,.15)"></pre>
+      </div>
+
+      <div class="sunday-card">
+        <div style="font-weight:800;margin-bottom:10px">Console mount</div>
+        <div style="color:var(--muted);line-height:1.6">
+          <div><b>Entry:</b> <code>/learnmappers</code></div>
+          <div><b>Config:</b> <code>/learnmappers/app.config.js</code></div>
+          <div><b>Pages:</b> <code>/learnmappers/html/*</code></div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--muted)">When you later map a TLD (apex or subdomain), the proxy can route that host to this console mount.</div>
+      </div>
+
+      <div class="sunday-card">
+        <div style="font-weight:800;margin-bottom:10px">Legacy content</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="sunday-badge" href="/sites/learnmappers/content/pages/index.html" target="_blank" rel="noreferrer">Legacy Home</a>
+          <a class="sunday-badge" href="/sites/learnmappers/content/pages/docs.html" target="_blank" rel="noreferrer">Legacy Docs</a>
+          <a class="sunday-badge" href="/sites/learnmappers/pages/resource-cards/resource-card.html" target="_blank" rel="noreferrer">Resource Card Template</a>
+          <a class="sunday-badge" href="/sites/learnmappers/pages/service-cards/service-card.html" target="_blank" rel="noreferrer">Service Card Template</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/learnmappers/js/lm-core.js"></script>
+<script>
+  async function initSettingsPage() {
+    const dump = document.getElementById('lmConfigDump');
+    try {
+      const cfg = await window.LearnMappersConsole.loadConfig();
+      dump.textContent = JSON.stringify(cfg, null, 2);
+    } catch (e) {
+      dump.textContent = `Failed to load config: ${e?.message || String(e)}`;
+    }
+  }
+</script>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Cartridge Demo (LearnMappers Override)</title>
+  <link rel="stylesheet" href="/sundayapp/css/tokens.css" />
+  <link rel="stylesheet" href="/sundayapp/css/base.css" />
+  <link rel="stylesheet" href="/sundayapp/css/utilities.css" />
+  <style>
+    body { background: var(--bg); color: var(--ink); }
+    .wrap { max-width: 860px; margin: 28px auto; padding: 0 16px; }
+    .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 16px; }
+    code { font-family: var(--font-mono); }
+    .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); background: rgba(124,227,255,0.08); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 style="margin:0 0 10px">🧠 Smart Cartridge Demo</h1>
+    <div class="badge" style="margin-bottom:14px">
+      <strong>Override active</strong>
+      <span style="color:var(--muted)">LearnMappers console</span>
+    </div>
+
+    <p style="margin:0 0 18px; color: var(--muted)">
+      You are viewing the <strong>console-local override</strong> at:
+      <code>sites/learnmappers/console/cartridges/smart-cartridge-demo/index.html</code>
+    </p>
+
+    <div class="card">
+      <div style="font-weight:800; margin-bottom:8px">This proves Smart Cartridges</div>
+      <ul style="margin:0; padding-left:18px">
+        <li>Same URL in the browser: <code>/cartridges/smart-cartridge-demo/index.html</code></li>
+        <li>Different content depending on the console</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

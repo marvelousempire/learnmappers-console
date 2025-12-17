@@ -1,0 +1,119 @@
+<div class="tab-content">
+  <div class="sunday-container">
+    <div class="sunday-card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin:0">Services</h2>
+          <div style="color:var(--muted);margin-top:6px">Loaded from <code>/sites/learnmappers/config.json</code>.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="sunday-btn" href="#carts">View cart</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sunday-card" style="margin-bottom:14px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="lmServicesSearch" class="sunday-input" placeholder="Search services…" style="min-width:260px" />
+        <select id="lmServicesCategory" class="sunday-input" style="min-width:220px"></select>
+        <div id="lmServicesStatus" style="color:var(--muted);font-size:12px"></div>
+      </div>
+    </div>
+
+    <div id="lmServicesList" class="sunday-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px"></div>
+  </div>
+</div>
+
+<script src="/learnmappers/js/lm-core.js"></script>
+<script>
+  async function initServicesPage() {
+    const listEl = document.getElementById('lmServicesList');
+    const searchEl = document.getElementById('lmServicesSearch');
+    const catEl = document.getElementById('lmServicesCategory');
+    const statusEl = document.getElementById('lmServicesStatus');
+
+    const cfg = await window.LearnMappersConsole.loadConfig();
+    const categories = cfg?.content?.services?.categories || [];
+
+    const options = [
+      { id: 'all', title: 'All categories' },
+      ...categories.map(c => ({ id: c.id, title: c.title || c.id }))
+    ];
+    catEl.innerHTML = options.map(o => `<option value="${window.LearnMappersConsole.escapeHtml(o.id)}">${window.LearnMappersConsole.escapeHtml(o.title)}</option>`).join('');
+
+    function flatten() {
+      const q = (searchEl.value || '').toLowerCase().trim();
+      const selected = catEl.value || 'all';
+      const rows = [];
+
+      categories.forEach(cat => {
+        if (selected !== 'all' && cat.id !== selected) return;
+        (cat.services || []).forEach(svc => {
+          const hay = `${svc.title || ''} ${svc.description || ''} ${cat.title || ''}`.toLowerCase();
+          if (q && !hay.includes(q)) return;
+          rows.push({ cat, svc });
+        });
+      });
+
+      return rows;
+    }
+
+    function render() {
+      const rows = flatten();
+      statusEl.textContent = `${rows.length} service(s)`;
+
+      listEl.innerHTML = rows.map(({ cat, svc }) => {
+        const title = window.LearnMappersConsole.escapeHtml(svc.title || 'Untitled');
+        const desc = window.LearnMappersConsole.escapeHtml(svc.description || svc.purpose || '');
+        const catTitle = window.LearnMappersConsole.escapeHtml(cat.title || cat.id);
+        const icon = window.LearnMappersConsole.escapeHtml(svc.icon || cat.icon || '🧩');
+        const id = window.LearnMappersConsole.escapeHtml(svc.id || '');
+
+        return `
+          <div class="sunday-card" style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="font-size:22px">${icon}</div>
+              <div style="flex:1">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <div style="font-weight:800">${title}</div>
+                  <span class="sunday-badge">${catTitle}</span>
+                </div>
+                <div style="color:var(--muted);margin-top:6px;line-height:1.5">${desc}</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+              <button class="sunday-btn" data-add="${id}">Add to cart</button>
+              <div style="font-size:12px;color:var(--muted)">${id ? `id: ${id}` : ''}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Bind add-to-cart
+      listEl.querySelectorAll('button[data-add]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const serviceId = btn.getAttribute('data-add');
+          const row = rows.find(r => (r.svc.id || '') === serviceId);
+          const title = row?.svc?.title || serviceId || 'Service';
+          const categoryId = row?.cat?.id || null;
+
+          window.LearnMappersConsole.addItemToActiveCart({
+            kind: 'service',
+            serviceId,
+            title,
+            categoryId
+          });
+
+          btn.textContent = 'Added';
+          setTimeout(() => (btn.textContent = 'Add to cart'), 850);
+        });
+      });
+    }
+
+    searchEl.addEventListener('input', render);
+    catEl.addEventListener('change', render);
+
+    render();
+  }
+</script>

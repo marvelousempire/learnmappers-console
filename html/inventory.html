@@ -1,0 +1,106 @@
+<div class="tab-content">
+  <div class="sunday-container">
+    <div class="sunday-card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin:0">Inventory</h2>
+          <div style="color:var(--muted);margin-top:6px">Reads from <code>/api/inventory</code> (same endpoint LearnMappers config references).</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="sunday-btn" id="lmInvRefresh">Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sunday-card" style="margin-bottom:14px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="lmInvSearch" class="sunday-input" placeholder="Search inventory…" style="min-width:260px" />
+        <div id="lmInvStatus" style="color:var(--muted);font-size:12px"></div>
+      </div>
+    </div>
+
+    <div id="lmInvList" class="sunday-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px"></div>
+  </div>
+</div>
+
+<script src="/learnmappers/js/lm-core.js"></script>
+<script>
+  async function initInventoryPage() {
+    const listEl = document.getElementById('lmInvList');
+    const searchEl = document.getElementById('lmInvSearch');
+    const statusEl = document.getElementById('lmInvStatus');
+    const refreshBtn = document.getElementById('lmInvRefresh');
+
+    let items = [];
+
+    async function load() {
+      statusEl.textContent = 'Loading…';
+      const res = await fetch('/api/inventory', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Inventory load failed: HTTP ${res.status}`);
+      const data = await res.json();
+      items = data.items || [];
+      render();
+    }
+
+    function render() {
+      const q = (searchEl.value || '').toLowerCase().trim();
+      const rows = items.filter(it => {
+        if (!q) return true;
+        const hay = JSON.stringify(it || {}).toLowerCase();
+        return hay.includes(q);
+      });
+
+      statusEl.textContent = `${rows.length} item(s)`;
+
+      listEl.innerHTML = rows.map(it => {
+        const name = window.LearnMappersConsole.escapeHtml(it.name || it.title || it.id || 'Item');
+        const type = window.LearnMappersConsole.escapeHtml(it.type || '');
+        const notes = window.LearnMappersConsole.escapeHtml(it.notes || '');
+        const id = window.LearnMappersConsole.escapeHtml(it.id || '');
+
+        return `
+          <div class="sunday-card" style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="font-size:22px">📦</div>
+              <div style="flex:1">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <div style="font-weight:800">${name}</div>
+                  ${type ? `<span class=\"sunday-badge\">${type}</span>` : ''}
+                </div>
+                ${notes ? `<div style=\"color:var(--muted);margin-top:6px;line-height:1.5\">${notes}</div>` : ''}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+              <button class="sunday-btn" data-add="${id}">Add to cart</button>
+              <div style="font-size:12px;color:var(--muted)">${id ? `id: ${id}` : ''}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('button[data-add]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemId = btn.getAttribute('data-add');
+          const it = items.find(x => String(x.id) === String(itemId));
+          window.LearnMappersConsole.addItemToActiveCart({
+            kind: 'inventory',
+            itemId,
+            title: it?.name || it?.title || itemId,
+            meta: { type: it?.type || null }
+          });
+          btn.textContent = 'Added';
+          setTimeout(() => (btn.textContent = 'Add to cart'), 850);
+        });
+      });
+    }
+
+    refreshBtn.addEventListener('click', () => load().catch(err => {
+      console.error(err);
+      statusEl.textContent = 'Failed to load inventory.';
+    }));
+
+    searchEl.addEventListener('input', render);
+
+    await load();
+  }
+</script>

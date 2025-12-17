@@ -1,0 +1,181 @@
+<!-- Global Header Component - LearnMappers Console -->
+
+<style>
+  .lm-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 0 20px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .lm-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 12px;
+  }
+
+  .lm-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .lm-header-title {
+    font-size: 18px;
+    font-weight: 850;
+    color: var(--ink);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .lm-header-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lm-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .lm-quick-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: transform .12s ease;
+  }
+  .lm-quick-btn:hover { transform: translateY(-1px); }
+
+  .lm-quick-btn.brand {
+    border: none;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    color: #081018;
+  }
+
+  .lm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  .lm-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success, #10b981);
+  }
+
+  @media (max-width: 768px) {
+    .lm-pill { display: none; }
+    .lm-quick-btn span.label { display: none; }
+    .lm-quick-btn { padding: 0 8px; }
+  }
+</style>
+
+<div class="lm-header">
+  <div class="lm-header-content">
+    <div class="lm-header-left">
+      <div>
+        <div class="lm-header-title">
+          🗺️ LearnMappers
+        </div>
+        <div class="lm-header-sub">Console</div>
+      </div>
+    </div>
+
+    <div class="lm-header-right">
+      <div class="lm-pill" title="Console status">
+        <span class="lm-dot" id="lmStatusDot"></span>
+        <span id="lmStatusText">Ready</span>
+      </div>
+
+      <button class="lm-quick-btn" type="button" id="lmThemeBtn" title="Toggle theme">
+        <span id="lmThemeIcon">🌙</span>
+        <span class="label" style="margin-left:8px">Theme</span>
+      </button>
+
+      <button class="lm-quick-btn brand" type="button" id="lmLogoutBtn" title="Logout">
+        🚪 <span class="label" style="margin-left:8px">Logout</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    function getTheme() {
+      return document.documentElement.getAttribute('data-theme') || localStorage.getItem('themeMode') || 'dark';
+    }
+
+    function setTheme(mode) {
+      document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('themeMode', mode);
+      const icon = document.getElementById('lmThemeIcon');
+      if (icon) icon.textContent = mode === 'dark' ? '🌙' : '☀️';
+    }
+
+    function toggleTheme() {
+      const current = getTheme();
+      setTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    async function logout() {
+      try {
+        // Clear client token first (immediate effect)
+        localStorage.removeItem('sunday_access_token');
+        localStorage.removeItem('sunday_refresh_token');
+
+        // Best-effort server logout
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+      } finally {
+        window.location.hash = '#cartridge/auth/app/login/page/main';
+      }
+    }
+
+    // init
+    setTheme(getTheme());
+
+    const themeBtn = document.getElementById('lmThemeBtn');
+    if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+    const logoutBtn = document.getElementById('lmLogoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', logout);
+  })();
+</script>

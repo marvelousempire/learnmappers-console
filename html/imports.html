@@ -1,0 +1,83 @@
+<div class="tab-content">
+  <div class="sunday-container">
+    <div class="sunday-card" style="margin-bottom:14px">
+      <h2 style="margin:0">Imports</h2>
+      <div style="color:var(--muted);margin-top:6px">Vendor import endpoints are available at <code>/api/vendors</code> (and related routes). Vendor mapper code is preserved in the LearnMappers site bundle.</div>
+    </div>
+
+    <div class="sunday-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px">
+      <div class="sunday-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:800">Vendors</div>
+            <div style="color:var(--muted);font-size:12px;margin-top:4px">From <code>/api/vendors</code></div>
+          </div>
+          <button class="sunday-btn" id="lmVendorsRefresh">Refresh</button>
+        </div>
+        <div id="lmVendorsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="sunday-card">
+        <div style="font-weight:800;margin-bottom:6px">LearnMappers vendor mappers (preserved)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="sunday-badge" href="/sites/learnmappers/js/vendor-importer.js" target="_blank" rel="noreferrer">vendor-importer.js</a>
+          <a class="sunday-badge" href="/sites/learnmappers/js/vendor-mappers/amazon-mapper.js" target="_blank" rel="noreferrer">amazon-mapper.js</a>
+          <a class="sunday-badge" href="/sites/learnmappers/js/vendor-mappers/ebay-mapper.js" target="_blank" rel="noreferrer">ebay-mapper.js</a>
+          <a class="sunday-badge" href="/sites/learnmappers/js/vendor-mappers/homedepot-mapper.js" target="_blank" rel="noreferrer">homedepot-mapper.js</a>
+        </div>
+        <div style="color:var(--muted);font-size:12px;line-height:1.5;margin-top:10px">
+          Next step is wiring a file upload UI here that calls <code>/api/vendors/import</code> and stores results into inventory/resources.
+        </div>
+      </div>
+
+      <div class="sunday-card">
+        <div style="font-weight:800;margin-bottom:6px">Docs</div>
+        <div style="color:var(--muted);line-height:1.55;margin-bottom:10px">Legacy documentation for vendor import is included.</div>
+        <a class="sunday-btn" href="/sites/learnmappers/content/pages/docs-vendor-import.html" target="_blank" rel="noreferrer">Open Vendor Import Docs</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/learnmappers/js/lm-core.js"></script>
+<script>
+  async function initImportsPage() {
+    const listEl = document.getElementById('lmVendorsList');
+    const refreshBtn = document.getElementById('lmVendorsRefresh');
+
+    async function load() {
+      listEl.innerHTML = '<div style="color:var(--muted)">Loading…</div>';
+      const res = await fetch('/api/vendors', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Vendors load failed: HTTP ${res.status}`);
+      const data = await res.json();
+      const vendors = data.vendors || [];
+
+      if (!vendors.length) {
+        listEl.innerHTML = '<div style="color:var(--muted)">No vendors returned.</div>';
+        return;
+      }
+
+      listEl.innerHTML = vendors.map(v => {
+        const name = window.LearnMappersConsole.escapeHtml(v.name || v.id);
+        const id = window.LearnMappersConsole.escapeHtml(v.id || '');
+        const enabled = !!v.enabled;
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)">
+            <div>
+              <div style="font-weight:800">${name}</div>
+              <div style="font-size:12px;color:var(--muted)">${id}</div>
+            </div>
+            <span class="sunday-badge" style="${enabled ? '' : 'opacity:.6'}">${enabled ? 'enabled' : 'disabled'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    refreshBtn.addEventListener('click', () => load().catch(err => {
+      console.error(err);
+      listEl.innerHTML = '<div style="color:var(--muted)">Failed to load vendors.</div>';
+    }));
+
+    await load();
+  }
+</script>

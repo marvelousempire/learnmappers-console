@@ -1,0 +1,120 @@
+<div class="tab-content">
+  <div class="sunday-container">
+    <div class="sunday-card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin:0">Carts</h2>
+          <div style="color:var(--muted);margin-top:6px">Lightweight cart persistence (local-only) for services/resources selected in the console.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="sunday-btn" href="#services">Add services</a>
+          <a class="sunday-btn" href="#inventory">Add inventory</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sunday-grid" style="grid-template-columns:340px 1fr;gap:12px;align-items:start">
+      <div class="sunday-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="font-weight:800">Carts</div>
+          <button class="sunday-btn" id="lmCartCreate">New cart</button>
+        </div>
+        <div id="lmCartsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="sunday-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:800">Items</div>
+            <div id="lmCartMeta" style="color:var(--muted);font-size:12px;margin-top:4px"></div>
+          </div>
+          <button class="sunday-btn" id="lmCartDelete" style="opacity:.8">Delete cart</button>
+        </div>
+
+        <div id="lmCartItems" style="margin-top:12px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/learnmappers/js/lm-core.js"></script>
+<script>
+  function initCartsPage() {
+    const listEl = document.getElementById('lmCartsList');
+    const itemsEl = document.getElementById('lmCartItems');
+    const metaEl = document.getElementById('lmCartMeta');
+    const createBtn = document.getElementById('lmCartCreate');
+    const deleteBtn = document.getElementById('lmCartDelete');
+
+    function render() {
+      const state = window.LearnMappersConsole.loadCartsState();
+      const active = state.carts.find(c => c.id === state.activeCartId) || state.carts[0];
+
+      listEl.innerHTML = state.carts.map(c => {
+        const isActive = c.id === active.id;
+        return `
+          <button class="sunday-btn" data-cart="${window.LearnMappersConsole.escapeHtml(c.id)}" style="justify-content:space-between;${isActive ? 'outline:2px solid var(--brand);' : ''}">
+            <span>${window.LearnMappersConsole.escapeHtml(c.name)}</span>
+            <span class="sunday-badge" style="opacity:.75">${(c.items || []).length}</span>
+          </button>
+        `;
+      }).join('');
+
+      metaEl.textContent = `Active: ${active.name} • ${((active.items || []).length)} item(s)`;
+
+      const items = active.items || [];
+      if (!items.length) {
+        itemsEl.innerHTML = '<div style="color:var(--muted)">No items yet. Add from Services or Inventory.</div>';
+      } else {
+        itemsEl.innerHTML = items.map(it => {
+          const kind = window.LearnMappersConsole.escapeHtml(it.kind || 'item');
+          const title = window.LearnMappersConsole.escapeHtml(it.title || it.serviceId || it.itemId || it.id);
+          const ref = window.LearnMappersConsole.escapeHtml(it.serviceId || it.itemId || '');
+          return `
+            <div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);display:flex;gap:10px;align-items:flex-start;justify-content:space-between">
+              <div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <div style="font-weight:800">${title}</div>
+                  <span class="sunday-badge" style="opacity:.8">${kind}</span>
+                </div>
+                ${ref ? `<div style=\"font-size:12px;color:var(--muted);margin-top:6px\">${ref}</div>` : ''}
+              </div>
+              <button class="sunday-btn" data-remove="${window.LearnMappersConsole.escapeHtml(it.id)}" style="opacity:.85">Remove</button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      listEl.querySelectorAll('button[data-cart]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cartId = btn.getAttribute('data-cart');
+          window.LearnMappersConsole.setActiveCart(cartId);
+          render();
+        });
+      });
+
+      itemsEl.querySelectorAll('button[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemId = btn.getAttribute('data-remove');
+          window.LearnMappersConsole.removeItem(active.id, itemId);
+          render();
+        });
+      });
+
+      deleteBtn.onclick = () => {
+        if (!confirm(`Delete cart "${active.name}"?`)) return;
+        window.LearnMappersConsole.deleteCart(active.id);
+        render();
+      };
+    }
+
+    createBtn.addEventListener('click', () => {
+      const name = prompt('Cart name:', 'New Cart');
+      if (name === null) return;
+      window.LearnMappersConsole.createCart(name.trim() || 'New Cart');
+      render();
+    });
+
+    render();
+  }
+</script>

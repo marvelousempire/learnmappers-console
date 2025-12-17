@@ -1,0 +1,76 @@
+<div class="tab-content">
+  <div class="sunday-container">
+    <div class="sunday-card" style="margin-bottom:14px">
+      <h2 style="margin:0">Docs</h2>
+      <div style="color:var(--muted);margin-top:6px">Rendered from LearnMappers config documentation sections and embedded legacy docs pages.</div>
+    </div>
+
+    <div class="sunday-grid" style="grid-template-columns:340px 1fr;gap:12px;align-items:start">
+      <div class="sunday-card" style="position:sticky;top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="font-weight:800">Pages</div>
+          <button class="sunday-btn" id="lmDocsOpenNew">Open current in new tab</button>
+        </div>
+        <div id="lmDocsNav" style="margin-top:12px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <div class="sunday-card" style="overflow:hidden">
+        <iframe id="lmDocsFrame" title="LearnMappers Docs" src="/sites/learnmappers/content/pages/docs-index.html" style="width:100%;height:75vh;border:1px solid var(--line);border-radius:12px;background:var(--card)"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/learnmappers/js/lm-core.js"></script>
+<script>
+  async function initDocsPage() {
+    const navEl = document.getElementById('lmDocsNav');
+    const frame = document.getElementById('lmDocsFrame');
+    const openBtn = document.getElementById('lmDocsOpenNew');
+
+    const cfg = await window.LearnMappersConsole.loadConfig();
+    const sections = cfg?.documentation?.sections || [];
+
+    function toLegacyPath(href) {
+      // href often like "/docs-config.html". Convert to "/sites/learnmappers/content/pages/docs-config.html".
+      const clean = String(href || '').replace(/^\//, '');
+      if (!clean) return '/sites/learnmappers/content/pages/docs-index.html';
+      return `/sites/learnmappers/content/pages/${clean}`;
+    }
+
+    const links = [];
+    sections.forEach(sec => {
+      links.push({ type: 'section', title: sec.title || 'Section' });
+      (sec.pages || []).forEach(p => {
+        links.push({ type: 'page', title: p.title || p.href || 'Page', href: toLegacyPath(p.href) });
+      });
+    });
+
+    if (!links.length) {
+      navEl.innerHTML = '<div style="color:var(--muted)">No docs sections configured.</div>';
+      return;
+    }
+
+    navEl.innerHTML = links.map((l, idx) => {
+      if (l.type === 'section') {
+        return `<div style="font-size:12px;color:var(--muted);margin-top:${idx === 0 ? 0 : 10}px">${window.LearnMappersConsole.escapeHtml(l.title)}</div>`;
+      }
+      return `
+        <button class="sunday-btn" style="text-align:left;justify-content:flex-start" data-href="${window.LearnMappersConsole.escapeHtml(l.href)}">
+          ${window.LearnMappersConsole.escapeHtml(l.title)}
+        </button>
+      `;
+    }).join('');
+
+    navEl.querySelectorAll('button[data-href]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const href = btn.getAttribute('data-href');
+        frame.src = href;
+      });
+    });
+
+    openBtn.addEventListener('click', () => {
+      window.open(frame.src, '_blank', 'noreferrer');
+    });
+  }
+</script>

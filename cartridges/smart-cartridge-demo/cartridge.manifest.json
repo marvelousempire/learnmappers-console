@@ -1,0 +1,14 @@
+{
+  "cartridge": {
+    "id": "smart-cartridge-demo",
+    "name": "Smart Cartridge Demo (LearnMappers Override)",
+    "version": "1.0.0",
+    "description": "Console-local override for LearnMappers.",
+    "icon": "🧠",
+    "category": "learnmappers",
+    "type": "cartridge"
+  },
+  "entry": {
+    "html": "index.html"
+  }
+}

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnMappers Console</title>
+
+  <!-- 🌞 Sunday App Framework - Core CSS -->
+  <link rel="stylesheet" href="/sundayapp/css/tokens.css">
+  <link rel="stylesheet" href="/sundayapp/css/base.css">
+  <link rel="stylesheet" href="/sundayapp/css/utilities.css">
+
+  <!-- LearnMappers Console overrides -->
+  <link rel="stylesheet" href="css/learnmappers-console.css">
+
+  <style>
+    /* minimal loading screen so it appears instantly */
+    .loading-screen{position:fixed;inset:0;background:var(--bg,#0b0c10);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .25s ease,visibility .25s ease}
+    .loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .loading-content{text-align:center;color:var(--ink,#e9f3ff)}
+    .loading-content .logo{font-size:64px;margin-bottom:18px}
+    .loading-content h1{font-size:28px;font-weight:800;margin:0 0 8px}
+    .loading-content p{color:var(--muted,#9bb1c7);margin:0}
+    .loading-progress-container{width:280px;margin-top:28px}
+    .loading-progress-bar{height:4px;background:var(--line,#1f2937);border-radius:2px;overflow:hidden}
+    .loading-progress-fill{height:100%;background:linear-gradient(90deg,#7ce3ff,#60ffa8);width:0%;transition:width .25s ease}
+    .loading-status{text-align:center;color:var(--muted,#9bb1c7);font-size:12px;margin-top:12px}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-content">
+      <div class="logo">🗺️</div>
+      <h1>LearnMappers Console</h1>
+      <p>Loading your system…</p>
+    </div>
+    <div class="loading-progress-container">
+      <div class="loading-progress-bar">
+        <div id="loadingProgressFill" class="loading-progress-fill"></div>
+      </div>
+      <div id="loadingStatus" class="loading-status">Initializing…</div>
+    </div>
+  </div>
+
+  <!-- Global Header Container -->
+  <div id="global-header-container" class="global-header"></div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-container" style="max-width:1400px;margin:0 auto;padding:0 16px;border-top:1px solid var(--line);margin-top:8px;overflow:hidden">
+    <div class="tabs" id="mainTabs"></div>
+  </div>
+
+  <!-- Content Container -->
+  <div id="contentContainer" style="min-height:400px"></div>
+
+  <!-- 🌞 Sunday App Framework Bootstrap -->
+  <script type="module">
+    import { Sunday } from '/sundayapp/index.js';
+    import config from './app.config.js';
+    import { getAuthClient } from '/core/auth-client.js';
+    import { AuthGuard } from '/core/auth-guard.js';
+
+    const updateProgress = (percent, status) => {
+      const fill = document.getElementById('loadingProgressFill');
+      const statusEl = document.getElementById('loadingStatus');
+      if (fill) fill.style.width = `${percent}%`;
+      if (statusEl) statusEl.textContent = status;
+    };
+
+    const hideLoading = () => {
+      const screen = document.getElementById('loadingScreen');
+      if (screen) screen.classList.add('hidden');
+    };
+
+    // Attach Bearer token automatically to same-origin /api/* calls.
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (input, init = {}) => {
+      try {
+        const token = localStorage.getItem('sunday_access_token');
+        if (!token) return originalFetch(input, init);
+
+        const url = (typeof input === 'string') ? input : (input?.url || '');
+        const u = new URL(url, window.location.origin);
+        const isSameOrigin = u.origin === window.location.origin;
+        const isApi = u.pathname.startsWith('/api/');
+        if (!isSameOrigin || !isApi) return originalFetch(input, init);
+
+        const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
+        if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+        return originalFetch(input, { ...init, headers });
+      } catch {
+        return originalFetch(input, init);
+      }
+    };
+
+    async function loadHeader() {
+      try {
+        // IMPORTANT: Consoles must not inherit another console's header.
+        // Always prefer a console-local header and fall back to the shared Sunday header.
+        const candidates = [
+          'components/header/header.html',
+          '/sundayapp/components/header/console-header.html'
+        ];
+
+        let html = null;
+        let lastErr = null;
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) {
+              lastErr = new Error(`${url}: HTTP ${res.status}`);
+              continue;
+            }
+            html = await res.text();
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+
+        if (!html) throw lastErr || new Error('Header not found');
+        const container = document.getElementById('global-header-container');
+        if (!container) return;
+
+        container.innerHTML = html;
+
+        // Execute inline scripts in the loaded HTML
+        const scripts = container.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement('script');
+          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+          newScript.textContent = oldScript.textContent;
+          oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+      } catch (err) {
+        console.error('[Header] Load failed:', err);
+      }
+    }
+
+    async function initApp() {
+      try {
+        updateProgress(10, 'Checking authentication…');
+
+        const auth = getAuthClient();
+        const hash = window.location.hash || '';
+        const isAuthPage =
+          hash.includes('cartridge/auth/app/login') ||
+          hash.includes('cartridge/auth/app/register') ||
+          hash.includes('cartridge/auth/app/login/page/forgot') ||
+          hash.includes('cartridge/auth/app/login/page/reset');
+
+        if (!auth.isAuthenticated() && !isAuthPage) {
+          if (hash && !hash.includes('login')) {
+            sessionStorage.setItem('sunday_redirect_after_login', hash);
+          }
+          updateProgress(15, 'Redirecting to login…');
+          window.location.hash = '#cartridge/auth/app/login/page/main';
+        }
+
+        updateProgress(25, 'Loading framework…');
+        await Sunday.init(config);
+
+        // Enforce auth on router navigation
+        try {
+          const guard = new AuthGuard({
+            authClient: auth,
+            loginPath: '#cartridge/auth/app/login/page/main',
+            publicRoutes: ['login', 'register', 'forgot-password', 'reset-password']
+          });
+          guard.initRouter(Sunday.router);
+        } catch (e) {
+          console.warn('[Auth] Guard init failed:', e);
+        }
+
+        updateProgress(55, 'Loading header…');
+        await loadHeader();
+
+        updateProgress(100, 'Ready!');
+        setTimeout(hideLoading, 150);
+
+        console.log('🌞 LearnMappers Console ready');
+      } catch (error) {
+        console.error('LearnMappers Console initialization failed:', error);
+        updateProgress(100, 'Error: ' + (error?.message || String(error)));
+      }
+    }
+
+    initApp();
+  </script>
+
+  <!-- Sunday Framework Components: FAB & Quick Actions -->
+  <script type="module">
+    import { FAB } from '/sundayapp/components/buttons/fab.js';
+    import { QuickActionsModal } from '/sundayapp/components/modals/quick-actions.js';
+
+    QuickActionsModal.getInstance();
+
+    const fab = new FAB({
+      icon: '⚡',
+      variant: 'brand',
+      position: 'bottom-right',
+      pulse: true,
+      onClick: () => QuickActionsModal.toggle()
+    });
+
+    fab.appendToBody();
+  </script>
+</body>
+</html>
