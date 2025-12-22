@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LearnMappers Console</title>
 
+  <!-- 🎨 EARLY THEME DETECTION - Prevents flash of wrong theme -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('sunday-theme') || localStorage.getItem('theme');
+      if (!saved) {
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        saved = prefersDark ? 'dark' : 'light';
+      }
+      if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    })();
+  </script>
+
   <!-- 🌞 Sunday App Framework - Core CSS -->
   <link rel="stylesheet" href="/sundayapp/css/tokens.css">
   <link rel="stylesheet" href="/sundayapp/css/base.css">
