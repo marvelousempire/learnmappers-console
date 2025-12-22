@@ -56,13 +56,19 @@
     }
   </style>
   
-  <!-- EARLY AUTH DETECTION -->
+  <!-- EARLY AUTH DETECTION - Runs before body renders to prevent flash -->
   <script>
     (function() {
       var hash = window.location.hash || '';
       var isAuth = hash.indexOf('cartridge/auth') !== -1 || 
                    hash.indexOf('/login') !== -1 || 
-                   hash.indexOf('/register') !== -1;
+                   hash.indexOf('/register') !== -1 ||
+                   hash === '#login' ||
+                   hash === '#register' ||
+                   hash.indexOf('#login') !== -1 ||
+                   hash.indexOf('#register') !== -1 ||
+                   hash.indexOf('forgot-password') !== -1 ||
+                   hash.indexOf('reset-password') !== -1;
       if (isAuth) {
         document.documentElement.classList.add('is-auth-page');
       }

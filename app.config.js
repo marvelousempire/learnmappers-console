@@ -68,6 +68,11 @@ export default {
       page: 'settings',
       title: 'Settings',
       fallback: './html/settings.html'
+    },
+    login: {
+      page: 'login',
+      title: 'Sign In',
+      fallback: './html/login.html'
     }
   },
 
