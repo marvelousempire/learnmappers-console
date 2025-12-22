@@ -26,9 +26,90 @@
     .loading-progress-fill{height:100%;background:linear-gradient(90deg,#7ce3ff,#60ffa8);width:0%;transition:width .25s ease}
     .loading-status{text-align:center;color:var(--muted,#9bb1c7);font-size:12px;margin-top:12px}
     @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    
+    /* Auth page styles - hide all navigation chrome on login/register pages */
+    body.auth-page .global-header,
+    body.auth-page .tabs-container,
+    body.auth-page .fab-button,
+    body.auth-page .fab-container,
+    body.auth-page [class*="fab"],
+    body.auth-page #global-header-container,
+    body.auth-page #mainTabs,
+    body.auth-page .auth-hide,
+    html.is-auth-page .global-header,
+    html.is-auth-page .tabs-container,
+    html.is-auth-page .fab-button,
+    html.is-auth-page .fab-container,
+    html.is-auth-page [class*="fab"],
+    html.is-auth-page #global-header-container,
+    html.is-auth-page #mainTabs,
+    html.is-auth-page .auth-hide {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    body.auth-page #contentContainer,
+    html.is-auth-page #contentContainer {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
   </style>
+  
+  <!-- EARLY AUTH DETECTION -->
+  <script>
+    (function() {
+      var hash = window.location.hash || '';
+      var isAuth = hash.indexOf('cartridge/auth') !== -1 || 
+                   hash.indexOf('/login') !== -1 || 
+                   hash.indexOf('/register') !== -1;
+      if (isAuth) {
+        document.documentElement.classList.add('is-auth-page');
+      }
+    })();
+  </script>
 </head>
 <body>
+  <!-- Auth Page Detection Script -->
+  <script>
+    (function() {
+      function updateAuthPageUI() {
+        const hash = window.location.hash || '';
+        const isAuthPage = hash.includes('cartridge/auth') || 
+                           hash.includes('/login') ||
+                           hash.includes('/register') ||
+                           hash.includes('forgot-password') ||
+                           hash.includes('reset-password');
+        
+        document.documentElement.classList.toggle('is-auth-page', isAuthPage);
+        document.body.classList.toggle('auth-page', isAuthPage);
+        
+        const elementsToHide = document.querySelectorAll(
+          '.global-header, .tabs-container, .fab-button, .fab-container, #global-header-container, #mainTabs, .auth-hide'
+        );
+        elementsToHide.forEach(el => {
+          if (isAuthPage) {
+            el.style.cssText = 'display: none !important; visibility: hidden !important;';
+          } else {
+            el.style.cssText = '';
+          }
+        });
+      }
+      updateAuthPageUI();
+      window.addEventListener('hashchange', updateAuthPageUI);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateAuthPageUI);
+      }
+      const observer = new MutationObserver(updateAuthPageUI);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      setTimeout(updateAuthPageUI, 0);
+      setTimeout(updateAuthPageUI, 100);
+      setTimeout(updateAuthPageUI, 300);
+      setTimeout(updateAuthPageUI, 500);
+      setTimeout(updateAuthPageUI, 1000);
+    })();
+  </script>
+
   <!-- Loading Screen -->
   <div id="loadingScreen" class="loading-screen">
     <div class="loading-content">
@@ -44,11 +125,11 @@
     </div>
   </div>
 
-  <!-- Global Header Container -->
-  <div id="global-header-container" class="global-header"></div>
+  <!-- Global Header Container (hidden on auth pages) -->
+  <div id="global-header-container" class="global-header auth-hide"></div>
 
-  <!-- Tabs Navigation -->
-  <div class="tabs-container" style="max-width:1400px;margin:0 auto;padding:0 16px;border-top:1px solid var(--line);margin-top:8px;overflow:hidden">
+  <!-- Tabs Navigation (hidden on auth pages) -->
+  <div class="tabs-container auth-hide" style="max-width:1400px;margin:0 auto;padding:0 16px;border-top:1px solid var(--line);margin-top:8px;overflow:hidden">
     <div class="tabs" id="mainTabs"></div>
   </div>
 
@@ -97,8 +178,6 @@
 
     async function loadHeader() {
       try {
-        // IMPORTANT: Consoles must not inherit another console's header.
-        // Always prefer a console-local header and fall back to the shared Sunday header.
         const candidates = [
           'components/header/header.html',
           '/sundayapp/components/header/console-header.html'
@@ -126,7 +205,6 @@
 
         container.innerHTML = html;
 
-        // Execute inline scripts in the loaded HTML
         const scripts = container.querySelectorAll('script');
         scripts.forEach(oldScript => {
           const newScript = document.createElement('script');
@@ -162,7 +240,6 @@
         updateProgress(25, 'Loading framework…');
         await Sunday.init(config);
 
-        // Enforce auth on router navigation
         try {
           const guard = new AuthGuard({
             authClient: auth,
