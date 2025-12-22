@@ -1,0 +1,11 @@
+{
+  "consoleId": "learnmappers-console",
+  "name": "LearnMappers Console",
+  "description": "Learning and education platform",
+  "activeCartridges": [
+    "registry",
+    "smart-cartridge-demo"
+  ],
+  "created": "2025-12-22",
+  "lastUpdated": "2025-12-22"
+}
