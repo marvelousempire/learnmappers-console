@@ -212,42 +212,34 @@
 
     async function loadHeader() {
       try {
-        const candidates = [
-          'components/header/header.html',
-          '/sundayapp/components/header/console-header.html'
-        ];
-
-        let html = null;
-        let lastErr = null;
-        for (const url of candidates) {
-          try {
-            const res = await fetch(url, { cache: 'no-store' });
-            if (!res.ok) {
-              lastErr = new Error(`${url}: HTTP ${res.status}`);
-              continue;
-            }
-            html = await res.text();
-            break;
-          } catch (e) {
-            lastErr = e;
-          }
-        }
-
-        if (!html) throw lastErr || new Error('Header not found');
-        const container = document.getElementById('global-header-container');
-        if (!container) return;
-
-        container.innerHTML = html;
-
-        const scripts = container.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-          const newScript = document.createElement('script');
-          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-          newScript.textContent = oldScript.textContent;
-          oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
+        // Use Framework Header via proper loader
+        window.ConsoleHeaderConfig = {
+          name: 'LearnMappers',
+          icon: '🗺️',
+          version: '1.0.0',
+          showVersionBadge: true,
+          showSourceBadge: true
+        };
+        
+        const { createConsoleHeader } = await import('/sundayapp/components/header/index.js?v=' + Date.now());
+        await createConsoleHeader(window.ConsoleHeaderConfig);
+        console.log('[LearnMappers] ✅ Framework Header loaded');
       } catch (err) {
         console.error('[Header] Load failed:', err);
+      }
+    }
+    
+    async function loadDock() {
+      try {
+        const { createConsoleDock } = await import('/sundayapp/components/console-dock/index.js?v=' + Date.now());
+        window.consoleDock = await createConsoleDock({
+          consoleRegistry: Sunday?.consoleRegistry,
+          events: Sunday?.events,
+          motion: Sunday?.motion
+        });
+        console.log('[LearnMappers] ✅ Console Dock loaded');
+      } catch (err) {
+        console.error('[LearnMappers] Dock load failed:', err);
       }
     }
 
@@ -288,6 +280,9 @@
         updateProgress(55, 'Loading header…');
         await loadHeader();
 
+        updateProgress(75, 'Loading dock…');
+        await loadDock();
+
         updateProgress(100, 'Ready!');
         setTimeout(hideLoading, 150);
 
@@ -301,22 +296,6 @@
     initApp();
   </script>
 
-  <!-- Sunday Framework Components: FAB & Quick Actions -->
-  <script type="module">
-    import { FAB } from '/sundayapp/components/buttons/fab.js';
-    import { QuickActionsModal } from '/sundayapp/components/modals/quick-actions.js';
-
-    QuickActionsModal.getInstance();
-
-    const fab = new FAB({
-      icon: '⚡',
-      variant: 'brand',
-      position: 'bottom-right',
-      pulse: true,
-      onClick: () => QuickActionsModal.toggle()
-    });
-
-    fab.appendToBody();
-  </script>
+  <!-- Console Dock now handles FABs and Quick Actions -->
 </body>
 </html>
