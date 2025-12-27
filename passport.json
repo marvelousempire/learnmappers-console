@@ -1,0 +1,41 @@
+{
+  "$schema": "/sundayapp/schemas/passport.schema.json",
+  "udin": "CONSOLE-LEARNMAPPERS-20251227000000",
+  "name": "LearnMappers",
+  "shortName": "learnmappers-console",
+  "type": "console",
+  "version": "1.0.0",
+  "framework": "sundayapp",
+  "source": "./",
+  "entry": "index.html",
+  "config": "app.config.js",
+  
+  "console": {
+    "id": "learnmappers-console",
+    "icon": "🗺️",
+    "description": "Learning and education platform",
+    "subdomain": "learnmappers",
+    "port": 8005,
+    "isHashRoute": true,
+    "dockVisibility": "modal",
+    "priority": 6
+  },
+  
+  "bundled": false,
+  
+  "capabilities": {
+    "standalone": true,
+    "cartridge": false,
+    "responsive": true,
+    "accessible": true,
+    "themeable": true
+  },
+  
+  "metadata": {
+    "created": "2025-12-27T00:00:00Z",
+    "updated": "2025-12-27T00:00:00Z",
+    "author": "SundayApp Framework",
+    "repository": "https://github.com/marvelousempire/LearnMappers"
+  }
+}
+
